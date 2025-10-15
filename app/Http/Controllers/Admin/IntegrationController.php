@@ -27,8 +27,9 @@ class IntegrationController extends Controller
     public function create(): View
     {
         return view('admin.integrations.create', [
-            'integration' => new Integration(['is_active' => true]),
+            'integration' => new Integration(['is_active' => true, 'driver' => Integration::DRIVER_BUILTIN]),
             'types' => Integration::types(),
+            'drivers' => Integration::drivers(),
         ]);
     }
 
@@ -44,6 +45,7 @@ class IntegrationController extends Controller
         return view('admin.integrations.edit', [
             'integration' => $integration,
             'types' => Integration::types(),
+            'drivers' => Integration::drivers(),
         ]);
     }
 
@@ -81,22 +83,54 @@ class IntegrationController extends Controller
             })
             ->all();
 
+        $headers = collect($request->input('endpoint_headers', []))
+            ->mapWithKeys(function (array $pair) {
+                $key = trim((string) ($pair['key'] ?? ''));
+                $value = trim((string) ($pair['value'] ?? ''));
+
+                if ($key === '' || $value === '') {
+                    return [];
+                }
+
+                return [$key => $value];
+            })
+            ->all();
+
+        $payloadFormat = $request->input('endpoint_payload_format');
+
+        if ($payloadFormat) {
+            $settings['payload_format'] = $payloadFormat;
+        }
+
         $payload = $request->all();
         $payload['settings'] = $settings;
+        $payload['endpoint_headers'] = $headers;
+
+        if (! empty($payload['endpoint_method'])) {
+            $payload['endpoint_method'] = strtoupper($payload['endpoint_method']);
+        }
 
         $validator = validator($payload, [
             'name' => ['required', 'string', 'max:150'],
             'type' => ['required', 'string', Rule::in(Integration::types())],
+            'driver' => ['required', 'string', Rule::in(Integration::drivers())],
             'provider' => ['nullable', 'string', 'max:150'],
             'is_active' => ['sometimes', 'boolean'],
             'settings' => ['nullable', 'array'],
             'settings.*' => ['nullable', 'string', 'max:255'],
+            'endpoint_url' => ['nullable', 'url'],
+            'endpoint_method' => ['nullable', 'string', Rule::in(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'])],
+            'endpoint_headers' => ['nullable', 'array'],
+            'endpoint_headers.*' => ['nullable', 'string', 'max:255'],
+            'endpoint_payload_template' => ['nullable', 'string'],
+            'endpoint_payload_format' => ['nullable', 'string', Rule::in(['json', 'form'])],
         ]);
 
         $validated = $validator->validate();
 
         $validated['is_active'] = (bool) ($validated['is_active'] ?? false);
         $validated['provider'] = $validated['provider'] ?? null;
+        $validated['endpoint_method'] = $validated['endpoint_method'] ?? null;
 
         $type = $validated['type'];
 
@@ -109,6 +143,24 @@ class IntegrationController extends Controller
             ]
         )->validate();
 
-        return Arr::only($validated, ['name', 'type', 'provider', 'settings', 'is_active']);
+        if ($validated['driver'] === Integration::DRIVER_CUSTOM_HTTP) {
+            validator($validated, [
+                'endpoint_url' => ['required', 'url'],
+                'endpoint_method' => ['required', Rule::in(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'])],
+            ])->validate();
+        }
+
+        return Arr::only($validated, [
+            'name',
+            'type',
+            'driver',
+            'provider',
+            'settings',
+            'is_active',
+            'endpoint_url',
+            'endpoint_method',
+            'endpoint_headers',
+            'endpoint_payload_template',
+        ]);
     }
 }

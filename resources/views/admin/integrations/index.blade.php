@@ -20,6 +20,7 @@
                 <tr>
                     <th class="px-6 py-3 text-left">Name</th>
                     <th class="px-6 py-3 text-left">Type</th>
+                    <th class="px-6 py-3 text-left">Driver</th>
                     <th class="px-6 py-3 text-left">Provider</th>
                     <th class="px-6 py-3 text-left">Active</th>
                     <th class="px-6 py-3 text-left">Last Updated</th>
@@ -31,6 +32,7 @@
                     <tr class="hover:bg-slate-50">
                         <td class="px-6 py-4 font-medium text-slate-900">{{ $integration->name }}</td>
                         <td class="px-6 py-4 text-slate-600 capitalize">{{ str_replace('_', ' ', $integration->type) }}</td>
+                        <td class="px-6 py-4 text-slate-600 capitalize">{{ str_replace('-', ' ', $integration->driver ?? \App\Models\Integration::DRIVER_BUILTIN) }}</td>
                         <td class="px-6 py-4 text-slate-600">{{ $integration->provider ?? 'Custom' }}</td>
                         <td class="px-6 py-4">
                             @if($integration->is_active)
@@ -53,7 +55,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-6 py-8 text-center text-slate-500">No integrations configured yet.</td>
+                        <td colspan="7" class="px-6 py-8 text-center text-slate-500">No integrations configured yet.</td>
                     </tr>
                 @endforelse
             </tbody>

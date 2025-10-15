@@ -80,18 +80,22 @@
             <section class="rounded-3xl border border-white/5 bg-slate-900/60 p-6">
                 <h2 class="text-xl font-semibold text-white">Payment method</h2>
                 <div class="mt-6 space-y-3 text-sm text-slate-300">
-                    <label class="flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-                        <input type="radio" name="payment_method" value="card" {{ old('payment_method', 'card') === 'card' ? 'checked' : '' }} class="rounded-full border-white/10 bg-slate-900/60" />
-                        <span>Visa / Mastercard (Stripe test)</span>
-                    </label>
-                    <label class="flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-                        <input type="radio" name="payment_method" value="bank" {{ old('payment_method') === 'bank' ? 'checked' : '' }} class="rounded-full border-white/10 bg-slate-900/60" />
-                        <span>Manual bank transfer</span>
-                    </label>
-                    <label class="flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-                        <input type="radio" name="payment_method" value="afterpay" {{ old('payment_method') === 'afterpay' ? 'checked' : '' }} class="rounded-full border-white/10 bg-slate-900/60" />
-                        <span>Afterpay mock capture</span>
-                    </label>
+                    @forelse($paymentIntegrations as $integrationOption)
+                        <label class="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-900/60 p-4">
+                            <div class="flex items-center gap-3">
+                                <input type="radio" name="payment_integration_id" value="{{ $integrationOption->id }}" {{ (int) old('payment_integration_id', optional($paymentIntegrations->first())->id) === $integrationOption->id ? 'checked' : '' }} class="rounded-full border-white/10 bg-slate-900/60" />
+                                <div>
+                                    <div class="font-semibold text-white">{{ $integrationOption->name }}</div>
+                                    <div class="text-xs text-slate-400">{{ $integrationOption->provider ?? ucfirst($integrationOption->driver) }}</div>
+                                </div>
+                            </div>
+                            @if($integrationOption->driver === \App\Models\Integration::DRIVER_CUSTOM_HTTP)
+                                <span class="rounded-full bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-300">Custom script</span>
+                            @endif
+                        </label>
+                    @empty
+                        <p class="rounded-2xl border border-rose-500/40 bg-rose-500/10 p-4 text-sm text-rose-100">No payment integrations are active. Please contact support.</p>
+                    @endforelse
                     <label class="block text-sm text-slate-300">
                         <span>Order notes</span>
                         <textarea name="notes" rows="3" class="mt-2 w-full rounded-lg border border-white/10 bg-slate-900/60 px-3 py-2 text-sm text-white">{{ old('notes') }}</textarea>

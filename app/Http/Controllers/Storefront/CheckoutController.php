@@ -3,14 +3,18 @@
 namespace App\Http\Controllers\Storefront;
 
 use App\Http\Controllers\Controller;
+use App\Models\Integration;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Services\CartService;
+use App\Services\Integration\IntegrationEngine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class CheckoutController extends Controller
 {
@@ -25,10 +29,11 @@ class CheckoutController extends Controller
             'totals' => $cart->totals(),
             'coupon' => $cart->coupon(),
             'user' => Auth::user(),
+            'paymentIntegrations' => Integration::active()->forType(Integration::TYPE_PAYMENT)->orderBy('name')->get(),
         ]);
     }
 
-    public function store(Request $request, CartService $cart)
+    public function store(Request $request, CartService $cart, IntegrationEngine $integrationEngine)
     {
         $items = $cart->items();
 
@@ -52,7 +57,7 @@ class CheckoutController extends Controller
             'shipping.postcode' => ['required_if:shipping_same,false', 'nullable', 'string', 'max:10'],
             'shipping.country' => ['required_if:shipping_same,false', 'nullable', 'string', 'max:80'],
             'notes' => ['nullable', 'string', 'max:500'],
-            'payment_method' => ['required', 'in:card,bank,afterpay'],
+            'payment_integration_id' => ['required', Rule::exists('integrations', 'id')->where(fn ($query) => $query->where('type', Integration::TYPE_PAYMENT)->where('is_active', true))],
         ]);
 
         $totals = $cart->totals();
@@ -62,7 +67,42 @@ class CheckoutController extends Controller
             ? $validated['billing']
             : ($validated['shipping'] ?? $validated['billing']);
 
-        $order = DB::transaction(function () use ($validated, $items, $totals, $coupon, $shippingAddress) {
+        /** @var Integration $paymentIntegration */
+        $paymentIntegration = Integration::active()
+            ->forType(Integration::TYPE_PAYMENT)
+            ->findOrFail($validated['payment_integration_id']);
+
+        $paymentReference = 'CHK-'.Str::upper(Str::random(10));
+
+        $paymentResult = $integrationEngine->processPayment($paymentIntegration, [
+            'order_reference' => $paymentReference,
+            'amount' => $totals['total'],
+            'currency' => 'AUD',
+            'customer_name' => $validated['customer']['name'],
+            'customer_email' => $validated['customer']['email'],
+            'customer_phone' => $validated['customer']['phone'] ?? null,
+            'billing_address' => $validated['billing'],
+            'shipping_address' => $shippingAddress,
+            'notes' => $validated['notes'] ?? null,
+            'items' => $items->map(function ($item) {
+                /** @var Product $product */
+                $product = $item['product'];
+
+                return [
+                    'product_id' => $product->id,
+                    'sku' => $product->sku,
+                    'name' => $product->name,
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $product->price,
+                ];
+            })->values()->all(),
+        ]);
+
+        if (! $paymentResult['success']) {
+            return back()->withInput()->with('error', $paymentResult['message'] ?? 'Unable to process payment. Please try another method.');
+        }
+
+        $order = DB::transaction(function () use ($validated, $items, $totals, $coupon, $shippingAddress, $paymentIntegration, $paymentResult) {
             $order = Order::create([
                 'user_id' => optional(Auth::user())->id,
                 'email' => $validated['customer']['email'],
@@ -70,7 +110,7 @@ class CheckoutController extends Controller
                 'customer_name' => $validated['customer']['name'],
                 'status' => 'processing',
                 'payment_status' => 'paid',
-                'payment_method' => $validated['payment_method'],
+                'payment_method' => $paymentIntegration->name,
                 'currency' => 'AUD',
                 'subtotal' => $totals['subtotal'],
                 'discount_total' => $totals['discount'],
@@ -83,6 +123,9 @@ class CheckoutController extends Controller
                 'placed_at' => now(),
                 'paid_at' => now(),
                 'notes' => $validated['notes'] ?? null,
+                'meta' => [
+                    'payment' => $paymentResult,
+                ],
             ]);
 
             foreach ($items as $item) {
@@ -105,6 +148,24 @@ class CheckoutController extends Controller
 
             return $order;
         });
+
+        $notificationPayload = [
+            'order_number' => $order->order_number,
+            'amount' => $order->grand_total,
+            'currency' => $order->currency,
+            'customer_name' => $order->customer_name,
+            'customer_email' => $order->email,
+            'customer_phone' => $order->phone,
+            'payment_method' => $order->payment_method,
+        ];
+
+        $notifications = [
+            'email' => $integrationEngine->executeForType(Integration::TYPE_EMAIL, 'order.confirmation', $notificationPayload),
+            'sms' => $integrationEngine->executeForType(Integration::TYPE_SMS, 'order.confirmation', $notificationPayload),
+            'whatsapp' => $integrationEngine->executeForType(Integration::TYPE_WHATSAPP, 'order.confirmation', $notificationPayload),
+        ];
+
+        $order->update(['meta' => array_merge($order->meta ?? [], ['notifications' => $notifications])]);
 
         Session::put('checkout.last_order', $order->id);
         $cart->clear();

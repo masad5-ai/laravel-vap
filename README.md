@@ -68,7 +68,7 @@ php artisan test
 | `role_user` | Pivot table assigning roles to users. | `role_id`, `user_id` |
 | `permission_role` | Pivot table linking permissions to roles. | `permission_id`, `role_id` |
 | `permission_user` | Allows direct permissions on a user in addition to role inheritance. | `permission_id`, `user_id` |
-| `integrations` | Persists payment, email, SMS, and WhatsApp gateway settings managed via the admin UI. | `name`, `type` (`payment`, `email`, `sms`, `whatsapp`), `provider`, `settings` (JSON key/value), `is_active` |
+| `integrations` | Persists payment, email, SMS, and WhatsApp gateway settings managed via the admin UI. | `name`, `type` (`payment`, `email`, `sms`, `whatsapp`), `driver` (`builtin`, `custom-http`), `provider`, `settings` (JSON), `endpoint_url`, `endpoint_method`, `endpoint_headers`, `is_active` |
 
 The demo seeder provisions the following staff roles with recommended permissions:
 
@@ -79,6 +79,10 @@ The demo seeder provisions the following staff roles with recommended permission
 - **Customer** – default role automatically applied to new shoppers.
 
 Invite new team members through the admin → **Team Members** screen to assign roles and optionally grant direct permissions. Gateway credentials for Stripe/Postmark/Twilio/WhatsApp (or custom providers) are configured via admin → **Gateways**, stored in the `integrations` table, and can be consumed by future payment/notification services.
+
+- Built-in drivers simulate well-known providers while you develop locally.
+- Custom HTTP drivers let you point to bespoke scripts hosted on shared Plesk servers by capturing endpoint URL, method, headers, and payload templates right in the admin.
+- Checkout automatically lists every active payment integration so customers can pick between native providers and custom scripts without code changes.
 
 ## Project structure highlights
 
