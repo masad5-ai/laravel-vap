@@ -19,7 +19,7 @@ A Laravel 12 ecommerce starter tailored for vape and lifestyle retailers. The ap
    npm install
    npm run build # or npm run dev for hot reloading
    ```
-2. **Environment** – copy `.env.example` to `.env` and update database credentials. For SQLite keep the generated `database/database.sqlite` file.
+2. **Environment** – copy `.env.example` to `.env` and set your MySQL credentials (`DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`). If you prefer SQLite locally, change `DB_CONNECTION=sqlite` and point `DB_DATABASE` at `database/database.sqlite`.
    ```bash
    php artisan key:generate
    ```
@@ -35,33 +35,22 @@ A Laravel 12 ecommerce starter tailored for vape and lifestyle retailers. The ap
    ```
    Visit [http://localhost:8000](http://localhost:8000).
 
-## Plesk shared hosting deployment
+## Plesk shared hosting deployment (no SSH)
 
-1. **Create a subdomain or domain** in Plesk and enable SSH access.
-2. **Upload project files** either by Git (recommended) or via SFTP:
-   - In Plesk go to *Websites & Domains → Git* and connect this repository, or
-   - Upload the repository contents to the desired document root (e.g. `/httpdocs`).
-3. **Set document root** to the `public/` directory (e.g. `/httpdocs/public`).
-4. **Install PHP dependencies** on the server (Plesk provides Composer):
-   ```bash
-   cd ~/httpdocs
-   composer install --no-dev --optimize-autoloader
-   ```
-5. **Copy environment config**
-   ```bash
-   cp .env.example .env
-   php artisan key:generate
-   ```
-   Update database credentials with the Plesk-provided MySQL details and set `APP_ENV=production`, `APP_URL=https://your-domain`.
-6. **Build frontend assets**
-   - If Node is available: `npm install && npm run build`
-   - Otherwise, build assets locally and upload the `public/build` directory.
-7. **Set storage permissions** for `storage/` and `bootstrap/cache/` (Plesk UI → File Manager → change permissions or via SSH `chmod -R 775 storage bootstrap/cache`).
-8. **Run migrations and seeders (optional)**
-   ```bash
-   php artisan migrate --seed
-   ```
-9. **Scheduler & queue** – if needed, configure a scheduled task in Plesk to run `php artisan schedule:run` every minute and set up Supervisor or Plesk Task for `php artisan queue:work`.
+1. **Create a subdomain or domain** in Plesk and ensure PHP ≥ 8.2 with the `pdo_mysql` extension enabled.
+2. **Upload project files** either via the Plesk Git integration (Websites & Domains → Git) or by uploading a ZIP through the File Manager and extracting it into `/httpdocs`.
+3. **Point the document root** to the `public/` directory (e.g. set document root to `/httpdocs/public`).
+4. **Install PHP dependencies**:
+   - Preferred: use *Websites & Domains → PHP Composer* to run `composer install --no-dev --optimize-autoloader` from the UI.
+   - Alternative: run `composer install` locally, then upload the generated `vendor/` directory.
+5. **Configure the environment**:
+   - Copy `.env.example` to `.env` using the File Manager.
+   - Generate an application key via *Websites & Domains → PHP Composer → Execute command* with `php artisan key:generate` (runs once), or run it locally and paste the resulting `APP_KEY` into `.env`.
+   - Fill in the MySQL credentials supplied by Plesk (`DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`) and set `APP_ENV=production`, `APP_URL=https://your-domain`.
+6. **Build frontend assets** locally (`npm install && npm run build`) and upload the `public/build` directory, or use Plesk's Node.js extension if available.
+7. **Set storage permissions** via the File Manager so `storage/` and `bootstrap/cache/` are writable (change permissions to 775 or grant write access to the web user).
+8. **Run migrations/seeders** by creating a one-off Scheduled Task in Plesk that executes `php /var/www/vhosts/<domain>/httpdocs/artisan migrate --force` (replace the path accordingly). Repeat for `db:seed` if you want demo data, then disable the task.
+9. **Scheduler & queue** – configure recurring Scheduled Tasks for `php artisan schedule:run` (every minute) and `php artisan queue:work --stop-when-empty` if background jobs are required.
 
 ## Testing
 
