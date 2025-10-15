@@ -13,7 +13,7 @@ A Laravel 12 ecommerce starter tailored for vape and lifestyle retailers. The ap
 
 ## Local development
 
-1. **Install dependencies**
+1. **Install dependencies** (the project pins Vite 5 so Node.js 18.20.x works out of the box)
    ```bash
    composer install
    npm install
@@ -49,7 +49,7 @@ A Laravel 12 ecommerce starter tailored for vape and lifestyle retailers. The ap
    - Copy `.env.example` to `.env` using the File Manager.
    - Generate an application key via *Websites & Domains → PHP Composer → Execute command* with `php artisan key:generate` (runs once), or run it locally and paste the resulting `APP_KEY` into `.env`.
    - Fill in the MySQL credentials supplied by Plesk (`DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`) and set `APP_ENV=production`, `APP_URL=https://your-domain`.
-6. **Build frontend assets** locally (`npm install && npm run build`) and upload the `public/build` directory, or use Plesk's Node.js extension if available.
+6. **Build frontend assets** locally (`npm install && npm run build`) and upload the `public/build` directory. The bundled Vite 5 configuration runs on Node.js 18.20.x, so you can also use Plesk's Node.js extension without upgrading the server runtime.
 7. **Set storage permissions** via the File Manager so `storage/` and `bootstrap/cache/` are writable (change permissions to 775 or grant write access to the web user).
 8. **Run migrations/seeders** by creating a one-off Scheduled Task in Plesk that executes `php /var/www/vhosts/<domain>/httpdocs/artisan migrate --force` (replace the path accordingly). Repeat for `db:seed` if you want demo data, then disable the task. If scheduled tasks are unavailable, import the bundled `database/schema/mysql-schema.sql` via phpMyAdmin to create the schema manually.
 9. **Scheduler & queue** – configure recurring Scheduled Tasks for `php artisan schedule:run` (every minute) and `php artisan queue:work --stop-when-empty` if background jobs are required.
