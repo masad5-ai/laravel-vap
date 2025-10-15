@@ -29,7 +29,9 @@ A Laravel 12 ecommerce starter tailored for vape and lifestyle retailers. The ap
    ```
    Demo admin credentials: `admin@vaperoo.test` / `ChangeMe123!`
 
-4. **Serve the application**
+4. **Schema snapshot** – if you cannot run artisan migrations on your host, import `database/schema/mysql-schema.sql` into MySQL to create every table (roles, permissions, integrations, orders, catalog, queues, cache, etc.) exactly as the migrations define them.
+
+5. **Serve the application**
    ```bash
    php artisan serve
    ```
@@ -49,7 +51,7 @@ A Laravel 12 ecommerce starter tailored for vape and lifestyle retailers. The ap
    - Fill in the MySQL credentials supplied by Plesk (`DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`) and set `APP_ENV=production`, `APP_URL=https://your-domain`.
 6. **Build frontend assets** locally (`npm install && npm run build`) and upload the `public/build` directory, or use Plesk's Node.js extension if available.
 7. **Set storage permissions** via the File Manager so `storage/` and `bootstrap/cache/` are writable (change permissions to 775 or grant write access to the web user).
-8. **Run migrations/seeders** by creating a one-off Scheduled Task in Plesk that executes `php /var/www/vhosts/<domain>/httpdocs/artisan migrate --force` (replace the path accordingly). Repeat for `db:seed` if you want demo data, then disable the task.
+8. **Run migrations/seeders** by creating a one-off Scheduled Task in Plesk that executes `php /var/www/vhosts/<domain>/httpdocs/artisan migrate --force` (replace the path accordingly). Repeat for `db:seed` if you want demo data, then disable the task. If scheduled tasks are unavailable, import the bundled `database/schema/mysql-schema.sql` via phpMyAdmin to create the schema manually.
 9. **Scheduler & queue** – configure recurring Scheduled Tasks for `php artisan schedule:run` (every minute) and `php artisan queue:work --stop-when-empty` if background jobs are required.
 
 ## Testing
