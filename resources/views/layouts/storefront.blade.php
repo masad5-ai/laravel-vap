@@ -19,7 +19,10 @@
         @endif
     </head>
     <body class="bg-slate-950 text-slate-100 font-sans">
-        <header class="border-b border-white/10 bg-gradient-to-r from-purple-900/80 via-slate-900 to-slate-950">
+        <div class="bg-gradient-to-r from-cyan-500/30 via-violet-500/20 to-cyan-500/30 text-center text-xs uppercase tracking-[0.3em] text-white/90 py-2">
+            Free AU shipping over $79 • Age verification compliant • 24/7 support
+        </div>
+        <header class="border-b border-white/10 bg-gradient-to-r from-purple-900/70 via-slate-900 to-slate-950 backdrop-blur">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <a href="{{ route('home') }}" class="flex items-center gap-3">
                     <span class="bg-gradient-to-r from-cyan-400 to-violet-500 text-slate-900 font-black px-3 py-2 rounded-full uppercase tracking-widest text-xs">VAP</span>
@@ -30,7 +33,7 @@
                 </a>
                 <div class="flex-1 md:px-8">
                     <form action="{{ route('products.index') }}" method="get" class="relative">
-                        <input type="search" name="q" value="{{ request('q') }}" placeholder="Search flavours, brands or strengths..." class="w-full rounded-full border-0 bg-slate-800/80 py-3 pl-5 pr-14 text-sm text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-cyan-400" />
+                        <input type="search" name="q" value="{{ request('q') }}" placeholder="Search flavours, brands or strengths..." class="w-full rounded-full border border-white/10 bg-slate-900/80 py-3 pl-5 pr-14 text-sm text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-cyan-400" />
                         <button class="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-cyan-500 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-900">Search</button>
                     </form>
                 </div>
